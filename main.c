@@ -111,6 +111,25 @@ const Core *core(void) {
 	return core;
 }
 
+void free_core(void) {
+	if (core()) {
+		if (core()->font) {
+			TTF_CloseFont(core()->font);
+		}
+
+		if (core()->renderer) {
+			SDL_DestroyRenderer(core()->renderer);
+		}
+
+		if (core()->window) {
+			SDL_DestroyWindow(core()->window);
+		}
+
+		free((void *) core());
+		TTF_Quit();
+	}
+}
+
 State init_state(void) {
 	State state = {
 		.running = true
@@ -187,11 +206,12 @@ void render_image(const char *image_assets_path, const int anchor_type, int x, i
 	x = get_x_offset(anchor_type, w, x, scale);
 	y = get_y_offset(anchor_type, h, y, scale);
 
-	SDL_Rect image_rect;
-	image_rect.x = x;
-	image_rect.y = y;
-	image_rect.w = w*scale;
-	image_rect.h = h*scale;
+	SDL_Rect image_rect = {
+		.x = x,
+		.y = y,
+		.w = w*scale,
+		.h = h*scale
+	};
 
 	SDL_Texture *image_texture = SDL_CreateTextureFromSurface(core()->renderer, image_surface);
 	SDL_RenderCopy(core()->renderer, image_texture, NULL, &image_rect);
@@ -207,31 +227,32 @@ int main(void) {
 
 	State state = init_state();
 
-	SDL_SetRenderDrawColor(core()->renderer, 0, 0, 0, 255);
-	SDL_RenderClear(core()->renderer);
 
-	render_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
-
-	render_image("floor.bmp", ANCHOR_TYPE_BOTTOM_LEFT, 0, WINDOW_HEIGHT, WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
-
-
-
-	SDL_RenderPresent(core()->renderer);
 
 	SDL_Event event;
+	int i = 0;
 
 	while (state.running) {
 		handle_sdl_events(&event, &state);
+		SDL_RenderClear(core()->renderer);
 
+		SDL_SetRenderDrawColor(core()->renderer, 0, 0, 0, 255);
+		render_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
 
+		render_image("floor.bmp", ANCHOR_TYPE_BOTTOM_LEFT, 0, WINDOW_HEIGHT, WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
+
+		render_image("sprite.bmp", ANCHOR_TYPE_CENTER, 100+i, WINDOW_HEIGHT/2, IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 0.25);
+
+		SDL_RenderPresent(core()->renderer);
+
+		i++;
+		SDL_Delay(10);
 	}
 
-	free((void *) core());
 	free((void *) colors());
-	TTF_CloseFont(core()->font);
-	TTF_Quit();
-	SDL_DestroyRenderer(core()->renderer);
-	SDL_DestroyWindow(core()->window);
+
+	free_core();
+
 	SDL_Quit();
 
 	return EXIT_SUCCESS;
