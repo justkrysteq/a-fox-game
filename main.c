@@ -5,8 +5,33 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#define GAME_TITLE "Beat 'Em Up!"
+
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
+
+#define FONT_SIZE 32
+
+#define ANCHOR_TYPE_CENTER 0
+#define ANCHOR_TYPE_TOP_LEFT 1
+#define ANCHOR_TYPE_BOTTOM_LEFT 2
+
+#define IMAGE_SOURCE_WIDTH 0
+#define IMAGE_SOURCE_HEIGHT 0
+
+typedef struct {
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+	TTF_Font *font;
+} Core;
+
+typedef struct {
+	bool running;
+} State;
+
+typedef struct {
+	SDL_Color white;
+} Colors;
 
 void check_sdl_failure(const int condition, const char *message);
 
@@ -29,73 +54,184 @@ void check_sdl_failure(const int condition, const char *message) {
 	}
 }
 
-int main(void) {
-	init_sdl();
-
-	SDL_Window *window = SDL_CreateWindow("Beat 'Em Up!", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-	check_sdl_failure(!window, "Window could not be created");
-
-	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	check_sdl_failure(!renderer, "Renderer could not be created");
-
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	SDL_RenderClear(renderer);
-
-	TTF_Font* roboto = TTF_OpenFont("assets/Roboto-Regular.ttf", 32);
-	check_sdl_failure(!roboto, "Font could not be opened");
-
-	SDL_Color white = {255, 255, 255, 255};
-
-	SDL_Surface *message_surface = TTF_RenderText_Solid(roboto, "Hello, world!", white);
-	check_sdl_failure(!message_surface, "Text could not be rendered");
-
-	TTF_SizeText(roboto, "Hello, world!", &message_surface->w, &message_surface->h);
-
-	SDL_Texture *message_texture = SDL_CreateTextureFromSurface(renderer, message_surface);
-	SDL_RenderCopy(renderer, message_texture, NULL, NULL);
-
-
-
-	// SDL_Surface *surface = SDL_GetWindowSurface(window);
-	// SDL_Surface *image = SDL_LoadBMP("assets/sprite.bmp");
-	//
-	// check_sdl_failure(!image, "Image could not be loaded");
-	//
-	// SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 40, 80, 255));
-	//
-	// SDL_Rect rect;
-	// rect.w = 500;
-	// rect.h = 50;
-	// rect.x = (WINDOW_WIDTH - rect.w) / 2;
-	// rect.y = (WINDOW_HEIGHT - rect.h) / 2;
-	// SDL_BlitScaled(image, NULL, surface, &rect);
-
-	SDL_RenderPresent(renderer);
-
-	bool running = true;
-	SDL_Event event;
-
-	while (running) {
-
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
-				running = false;
-			} else if (event.type == SDL_KEYDOWN) {
-				if (event.key.keysym.sym == SDLK_q) {
-					running = false;
-				}
+void handle_sdl_events(SDL_Event *event, State *state) {
+	while (SDL_PollEvent(event)) {
+		if (event->type == SDL_QUIT) {
+			state->running = false;
+		} else if (event->type == SDL_KEYDOWN) {
+			if (event->key.keysym.sym == SDLK_q) {
+				state->running = false;
 			}
 		}
 	}
+}
 
-	// SDL_FreeSurface(image);
-	// SDL_FreeSurface(surface);
-	SDL_DestroyTexture(message_texture);
+void check_malloc_failure(const void *pointer) {
+	if (!pointer) {
+		printf("malloc failed!\n");
+
+		exit(EXIT_FAILURE);
+	}
+}
+
+const Colors *colors(void) { // NOTE: Might be better to use global consts
+	static Colors *colors = NULL;
+
+	if (!colors) {
+		colors = malloc(sizeof(Colors));
+		check_malloc_failure(colors);
+
+		colors->white = (SDL_Color) {255, 255, 255, 255};
+	}
+
+	return colors;
+}
+
+const Core *core(void) {
+	static Core *core = NULL;
+
+	if (!core) {
+		core = malloc(sizeof(Core));
+		check_malloc_failure(core);
+
+		core->window = NULL;
+		core->renderer = NULL;
+		core->font = NULL;
+
+		core->window = SDL_CreateWindow(GAME_TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+		check_sdl_failure(!core->window, "Window could not be created");
+
+		core->renderer = SDL_CreateRenderer(core->window, -1, SDL_RENDERER_ACCELERATED);
+		check_sdl_failure(!core->renderer, "Renderer could not be created");
+
+		core->font = TTF_OpenFont("assets/KiwiSoda.ttf", FONT_SIZE);
+		check_sdl_failure(!core->font, "Font could not be opened");
+	}
+
+	return core;
+}
+
+State init_state(void) {
+	State state = {
+		.running = true
+	};
+
+	return state;
+}
+
+int get_x_offset(const int anchor_type, const int w, const int x, const float scale) {
+	switch (anchor_type) {
+		default:
+		case ANCHOR_TYPE_TOP_LEFT:
+		case ANCHOR_TYPE_BOTTOM_LEFT:
+			return x;
+		case ANCHOR_TYPE_CENTER:
+			return x - w*scale / 2;
+	}
+}
+
+int get_y_offset(const int anchor_type, const int h, const int y, const float scale) {
+	switch (anchor_type) {
+		default:
+		case ANCHOR_TYPE_TOP_LEFT:
+			return y;
+		case ANCHOR_TYPE_CENTER:
+			return y - h*scale / 2;
+		case ANCHOR_TYPE_BOTTOM_LEFT:
+			return y - h*scale;
+	}
+}
+
+void render_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
+	SDL_Surface *message_surface = TTF_RenderText_Solid(core()->font, "Hello, world!", color);
+	check_sdl_failure(!message_surface, "Text could not be rendered");
+
+	TTF_SizeText(core()->font, text, &message_surface->w, &message_surface->h);
+
+	SDL_Texture *message_texture = SDL_CreateTextureFromSurface(core()->renderer, message_surface);
+
+	x = get_x_offset(anchor_type, message_surface->w, x, 1);
+	y = get_y_offset(anchor_type, message_surface->h, y, 1);
+
+	SDL_Rect message_rect = {
+		.x = x,
+		.y = y,
+		.w = message_surface->w,
+		.h = message_surface->h
+	};
+
+	SDL_RenderCopy(core()->renderer, message_texture, NULL, &message_rect);
+
 	SDL_FreeSurface(message_surface);
-	TTF_CloseFont(roboto);
+	SDL_DestroyTexture(message_texture);
+}
+
+void render_image(const char *image_assets_path, const int anchor_type, int x, int y, int w, int h, const float scale) {
+	char *image_path = malloc(sizeof(char) * (strlen(image_assets_path) + 1 + strlen("assets/")));
+	check_malloc_failure(image_path);
+
+	strcpy(image_path, "assets/");
+	strcat(image_path, image_assets_path);
+
+	SDL_Surface *image_surface = SDL_LoadBMP(image_path);
+	check_sdl_failure(!image_surface, "Image could not be loaded");
+
+	if (w == IMAGE_SOURCE_WIDTH) {
+		w = image_surface->w;
+	}
+
+	if (h == IMAGE_SOURCE_HEIGHT) {
+		h = image_surface->h;
+	}
+
+	x = get_x_offset(anchor_type, w, x, scale);
+	y = get_y_offset(anchor_type, h, y, scale);
+
+	SDL_Rect image_rect;
+	image_rect.x = x;
+	image_rect.y = y;
+	image_rect.w = w*scale;
+	image_rect.h = h*scale;
+
+	SDL_Texture *image_texture = SDL_CreateTextureFromSurface(core()->renderer, image_surface);
+	SDL_RenderCopy(core()->renderer, image_texture, NULL, &image_rect);
+
+	SDL_FreeSurface(image_surface);
+	SDL_DestroyTexture(image_texture);
+
+	free(image_path);
+}
+
+int main(void) {
+	init_sdl();
+
+	State state = init_state();
+
+	SDL_SetRenderDrawColor(core()->renderer, 0, 0, 0, 255);
+	SDL_RenderClear(core()->renderer);
+
+	render_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
+
+	render_image("floor.bmp", ANCHOR_TYPE_BOTTOM_LEFT, 0, WINDOW_HEIGHT, WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
+
+
+
+	SDL_RenderPresent(core()->renderer);
+
+	SDL_Event event;
+
+	while (state.running) {
+		handle_sdl_events(&event, &state);
+
+
+	}
+
+	free((void *) core());
+	free((void *) colors());
+	TTF_CloseFont(core()->font);
 	TTF_Quit();
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(core()->renderer);
+	SDL_DestroyWindow(core()->window);
 	SDL_Quit();
 
 	return EXIT_SUCCESS;

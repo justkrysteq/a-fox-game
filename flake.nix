@@ -40,7 +40,7 @@
 	{
 		devShells.x86_64-linux.default = pkgs.mkShell {
 			buildInputs = with pkgs; [
-				gcc gnumake SDL2 SDL2_ttf
+				gcc gnumake SDL2 SDL2_ttf valgrind
 
 				# Aliases
 				m c run a
