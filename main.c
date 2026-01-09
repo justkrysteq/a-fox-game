@@ -19,6 +19,14 @@
 #define IMAGE_SOURCE_WIDTH 0
 #define IMAGE_SOURCE_HEIGHT 0
 
+#define KEY_QUIT SDLK_q
+#define KEY_MOVE_UP SDLK_w
+#define KEY_MOVE_DOWN SDLK_s
+#define KEY_MOVE_LEFT SDLK_a
+#define KEY_MOVE_RIGHT SDLK_d
+#define KEY_LIGHT_ATTACK SDLK_e
+#define KEY_HEAVY_ATTACK SDLK_r
+
 typedef struct {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
@@ -32,6 +40,18 @@ typedef struct {
 typedef struct {
 	SDL_Color white;
 } Colors;
+
+typedef struct {
+	SDL_Texture *texture;
+	int w, h;
+} Sprite;
+
+typedef struct {
+	Sprite player;
+	Sprite enemy;
+	Sprite background;
+	Sprite floor;
+} Sprites;
 
 void check_sdl_failure(const int condition, const char *message);
 
@@ -59,8 +79,22 @@ void handle_sdl_events(SDL_Event *event, State *state) {
 		if (event->type == SDL_QUIT) {
 			state->running = false;
 		} else if (event->type == SDL_KEYDOWN) {
-			if (event->key.keysym.sym == SDLK_q) {
-				state->running = false;
+			switch (event->key.keysym.sym) {
+				case KEY_QUIT:
+					state->running = false;
+					break;
+				case KEY_MOVE_UP:
+					break;
+				case KEY_MOVE_DOWN:
+					break;
+				case KEY_MOVE_LEFT:
+					break;
+				case KEY_MOVE_RIGHT:
+					break;
+				case KEY_LIGHT_ATTACK:
+					break;
+				case KEY_HEAVY_ATTACK:
+					break;
 			}
 		}
 	}
@@ -78,7 +112,7 @@ const Colors *colors(void) { // NOTE: Might be better to use global consts
 	static Colors *colors = NULL;
 
 	if (!colors) {
-		colors = malloc(sizeof(Colors));
+		colors = (Colors *) malloc(sizeof(Colors));
 		check_malloc_failure(colors);
 
 		colors->white = (SDL_Color) {255, 255, 255, 255};
@@ -91,7 +125,7 @@ const Core *core(void) {
 	static Core *core = NULL;
 
 	if (!core) {
-		core = malloc(sizeof(Core));
+		core = (Core *) malloc(sizeof(Core));
 		check_malloc_failure(core);
 
 		core->window = NULL;
@@ -161,7 +195,11 @@ int get_y_offset(const int anchor_type, const int h, const int y, const float sc
 	}
 }
 
-void render_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
+// void render_static_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
+//
+// }
+
+void render_changable_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
 	SDL_Surface *message_surface = TTF_RenderText_Solid(core()->font, "Hello, world!", color);
 	check_sdl_failure(!message_surface, "Text could not be rendered");
 
@@ -185,42 +223,79 @@ void render_text(const char *text, const SDL_Color color, const int anchor_type,
 	SDL_DestroyTexture(message_texture);
 }
 
-void render_image(const char *image_assets_path, const int anchor_type, int x, int y, int w, int h, const float scale) {
-	char *image_path = malloc(sizeof(char) * (strlen(image_assets_path) + 1 + strlen("assets/")));
-	check_malloc_failure(image_path);
+Sprite create_sprite(const char *sprite_assets_path, int w, int h, const float scale) {
+	char *sprite_path = (char *) malloc(sizeof(char) * (strlen(sprite_assets_path) + 1 + strlen("assets/")));
+	check_malloc_failure(sprite_path);
 
-	strcpy(image_path, "assets/");
-	strcat(image_path, image_assets_path);
+	strcpy(sprite_path, "assets/");
+	strcat(sprite_path, sprite_assets_path);
 
-	SDL_Surface *image_surface = SDL_LoadBMP(image_path);
-	check_sdl_failure(!image_surface, "Image could not be loaded");
+	SDL_Surface *sprite_surface = SDL_LoadBMP(sprite_path);
+	check_sdl_failure(!sprite_surface, "Sprite could not be loaded");
 
 	if (w == IMAGE_SOURCE_WIDTH) {
-		w = image_surface->w;
+		w = sprite_surface->w;
 	}
 
 	if (h == IMAGE_SOURCE_HEIGHT) {
-		h = image_surface->h;
+		h = sprite_surface->h;
 	}
 
-	x = get_x_offset(anchor_type, w, x, scale);
-	y = get_y_offset(anchor_type, h, y, scale);
+	SDL_Texture *sprite_texture = SDL_CreateTextureFromSurface(core()->renderer, sprite_surface);
 
-	SDL_Rect image_rect = {
-		.x = x,
-		.y = y,
-		.w = w*scale,
-		.h = h*scale
+	SDL_FreeSurface(sprite_surface);
+
+	free(sprite_path);
+
+	Sprite sprite = {
+		.texture = sprite_texture,
+		.w = (int) (w * scale),
+		.h = (int) (h * scale)
 	};
 
-	SDL_Texture *image_texture = SDL_CreateTextureFromSurface(core()->renderer, image_surface);
-	SDL_RenderCopy(core()->renderer, image_texture, NULL, &image_rect);
-
-	SDL_FreeSurface(image_surface);
-	SDL_DestroyTexture(image_texture);
-
-	free(image_path);
+	return sprite;
 }
+
+const Sprites *sprites(void) {
+	static Sprites *sprites = NULL;
+
+	if (!sprites) {
+		sprites = (Sprites *) malloc(sizeof(Sprites));
+		check_malloc_failure(sprites);
+
+		sprites->player = create_sprite("sprite.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 0.25);
+		sprites->floor = create_sprite("floor.bmp", WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
+	}
+
+	return sprites;
+}
+
+void free_sprites(void) {
+	if (sprites()) {
+		SDL_DestroyTexture(sprites()->player.texture);
+		// SDL_DestroyTexture(sprites()->enemy.texture);
+		// SDL_DestroyTexture(sprites()->background.texture);
+		SDL_DestroyTexture(sprites()->floor.texture);
+
+		free((void *) sprites());
+	}
+}
+
+void render_sprite(Sprite sprite, int x, int y, const float scale, const int anchor_type) {
+	x = get_x_offset(anchor_type, sprite.w, x, scale);
+	y = get_y_offset(anchor_type, sprite.h, y, scale);
+
+	SDL_Rect sprite_rect = {
+		.x = x,
+		.y = y,
+		.w = (int) (sprite.w * scale),
+		.h = (int) (sprite.h * scale)
+	};
+
+	SDL_RenderCopy(core()->renderer, sprite.texture, NULL, &sprite_rect);
+}
+
+
 
 int main(void) {
 	init_sdl();
@@ -232,16 +307,17 @@ int main(void) {
 	SDL_Event event;
 	int i = 0;
 
-	while (state.running) {
+	while (state.running) { // TODO: Implement delta time
 		handle_sdl_events(&event, &state);
+
 		SDL_RenderClear(core()->renderer);
 
 		SDL_SetRenderDrawColor(core()->renderer, 0, 0, 0, 255);
-		render_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
+		render_changable_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
 
-		render_image("floor.bmp", ANCHOR_TYPE_BOTTOM_LEFT, 0, WINDOW_HEIGHT, WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
+		render_sprite(sprites()->floor, 0, WINDOW_HEIGHT, 1, ANCHOR_TYPE_BOTTOM_LEFT);
 
-		render_image("sprite.bmp", ANCHOR_TYPE_CENTER, 100+i, WINDOW_HEIGHT/2, IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 0.25);
+		render_sprite(sprites()->player, 100+i, WINDOW_HEIGHT/2, 1, ANCHOR_TYPE_CENTER);
 
 		SDL_RenderPresent(core()->renderer);
 
@@ -252,6 +328,7 @@ int main(void) {
 	free((void *) colors());
 
 	free_core();
+	free_sprites();
 
 	SDL_Quit();
 
