@@ -15,17 +15,19 @@
 #define ANCHOR_TYPE_CENTER 0
 #define ANCHOR_TYPE_TOP_LEFT 1
 #define ANCHOR_TYPE_BOTTOM_LEFT 2
+#define ANCHOR_TYPE_TOP_RIGHT 3
 
 #define IMAGE_SOURCE_WIDTH 0
 #define IMAGE_SOURCE_HEIGHT 0
 
-#define KEY_QUIT SDLK_q
+#define KEY_QUIT SDLK_ESCAPE
 #define KEY_MOVE_UP SDLK_w
 #define KEY_MOVE_DOWN SDLK_s
 #define KEY_MOVE_LEFT SDLK_a
 #define KEY_MOVE_RIGHT SDLK_d
 #define KEY_LIGHT_ATTACK SDLK_e
 #define KEY_HEAVY_ATTACK SDLK_r
+#define KEY_NEW_GAME SDLK_n
 
 typedef struct {
 	SDL_Window *window;
@@ -44,13 +46,13 @@ typedef struct {
 typedef struct {
 	SDL_Texture *texture;
 	int w, h;
-} Sprite;
+} Texture2D;
 
 typedef struct {
-	Sprite player;
-	Sprite enemy;
-	Sprite background;
-	Sprite floor;
+	Texture2D player;
+	Texture2D enemy;
+	Texture2D background;
+	Texture2D floor;
 } Sprites;
 
 void check_sdl_failure(const int condition, const char *message);
@@ -180,12 +182,15 @@ int get_x_offset(const int anchor_type, const int w, const int x, const float sc
 			return x;
 		case ANCHOR_TYPE_CENTER:
 			return x - w*scale / 2;
+		case ANCHOR_TYPE_TOP_RIGHT:
+			return x - w*scale;
 	}
 }
 
 int get_y_offset(const int anchor_type, const int h, const int y, const float scale) {
 	switch (anchor_type) {
 		default:
+		case ANCHOR_TYPE_TOP_RIGHT:
 		case ANCHOR_TYPE_TOP_LEFT:
 			return y;
 		case ANCHOR_TYPE_CENTER:
@@ -195,35 +200,64 @@ int get_y_offset(const int anchor_type, const int h, const int y, const float sc
 	}
 }
 
-// void render_static_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
-//
-// }
+Texture2D create_text_texture(const char *text, TTF_Font *font, const SDL_Color color) {
+	SDL_Surface *text_surface = TTF_RenderText_Solid(core()->font, text, color);
+	check_sdl_failure(!text_surface, "Text could not be rendered");
+	
+	TTF_SizeText(font, text, &text_surface->w, &text_surface->h);
 
-void render_changable_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
-	SDL_Surface *message_surface = TTF_RenderText_Solid(core()->font, "Hello, world!", color);
-	check_sdl_failure(!message_surface, "Text could not be rendered");
+	SDL_Texture *text_texture = SDL_CreateTextureFromSurface(core()->renderer, text_surface);
 
-	TTF_SizeText(core()->font, text, &message_surface->w, &message_surface->h);
-
-	SDL_Texture *message_texture = SDL_CreateTextureFromSurface(core()->renderer, message_surface);
-
-	x = get_x_offset(anchor_type, message_surface->w, x, 1);
-	y = get_y_offset(anchor_type, message_surface->h, y, 1);
-
-	SDL_Rect message_rect = {
-		.x = x,
-		.y = y,
-		.w = message_surface->w,
-		.h = message_surface->h
+	Texture2D text_texture2d = {
+		.texture = text_texture,
+		.w = text_surface->w,
+		.h = text_surface->h
 	};
 
-	SDL_RenderCopy(core()->renderer, message_texture, NULL, &message_rect);
+	SDL_FreeSurface(text_surface);
 
-	SDL_FreeSurface(message_surface);
-	SDL_DestroyTexture(message_texture);
+	return text_texture2d;
 }
 
-Sprite create_sprite(const char *sprite_assets_path, int w, int h, const float scale) {
+void render_static_text(const Texture2D text, int x, int y, const int anchor_type) {
+	x = get_x_offset(anchor_type, text.w, x, 1);
+	y = get_y_offset(anchor_type, text.h, y, 1);
+
+	SDL_Rect text_rect = {
+		.x = x,
+		.y = y,
+		.w = text.w,
+		.h = text.h
+	};
+
+	SDL_RenderCopy(core()->renderer, text.texture, NULL, &text_rect);
+}
+
+void render_dynamic_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
+	SDL_Surface *text_surface = TTF_RenderText_Solid(core()->font, text, color);
+	check_sdl_failure(!text_surface, "Text could not be rendered");
+
+	TTF_SizeText(core()->font, text, &text_surface->w, &text_surface->h);
+
+	SDL_Texture *text_texture = SDL_CreateTextureFromSurface(core()->renderer, text_surface);
+
+	x = get_x_offset(anchor_type, text_surface->w, x, 1);
+	y = get_y_offset(anchor_type, text_surface->h, y, 1);
+
+	SDL_Rect text_rect = {
+		.x = x,
+		.y = y,
+		.w = text_surface->w,
+		.h = text_surface->h
+	};
+
+	SDL_RenderCopy(core()->renderer, text_texture, NULL, &text_rect);
+
+	SDL_FreeSurface(text_surface);
+	SDL_DestroyTexture(text_texture);
+}
+
+Texture2D create_sprite(const char *sprite_assets_path, int w, int h, const float scale) {
 	char *sprite_path = (char *) malloc(sizeof(char) * (strlen(sprite_assets_path) + 1 + strlen("assets/")));
 	check_malloc_failure(sprite_path);
 
@@ -247,7 +281,7 @@ Sprite create_sprite(const char *sprite_assets_path, int w, int h, const float s
 
 	free(sprite_path);
 
-	Sprite sprite = {
+	Texture2D sprite = {
 		.texture = sprite_texture,
 		.w = (int) (w * scale),
 		.h = (int) (h * scale)
@@ -281,7 +315,7 @@ void free_sprites(void) {
 	}
 }
 
-void render_sprite(Sprite sprite, int x, int y, const float scale, const int anchor_type) {
+void render_sprite(Texture2D sprite, int x, int y, const float scale, const int anchor_type) {
 	x = get_x_offset(anchor_type, sprite.w, x, scale);
 	y = get_y_offset(anchor_type, sprite.h, y, scale);
 
@@ -305,27 +339,71 @@ int main(void) {
 
 
 	SDL_Event event;
-	int i = 0;
+	int fps = 0;
+	int time_s = 0;
 
-	while (state.running) { // TODO: Implement delta time
+	int prev_frame_time = SDL_GetTicks64();
+	int frame_time = 0;
+	double delta_time = 0;
+
+	float player_x = 100;
+
+	char fps_text[16];
+	char time_text[16];
+	strcpy(fps_text, "FPS: ?");
+	strcpy(time_text, "Time: 0");
+	int fps_update_time = SDL_GetTicks64();
+
+	Texture2D fps_text_texture = create_text_texture(fps_text, core()->font, colors()->white);
+	Texture2D time_text_texture = create_text_texture(time_text, core()->font, colors()->white);
+
+	while (state.running) {
 		handle_sdl_events(&event, &state);
+
+		frame_time = SDL_GetTicks64();
+		delta_time = (double) (frame_time - prev_frame_time) / 1000;
+		prev_frame_time = frame_time;
 
 		SDL_RenderClear(core()->renderer);
 
-		SDL_SetRenderDrawColor(core()->renderer, 0, 0, 0, 255);
-		render_changable_text("Hello, world!", colors()->white, ANCHOR_TYPE_CENTER, WINDOW_WIDTH/2, 100);
+		player_x += 50*delta_time;
+
+		if (frame_time - fps_update_time >= 1000) {
+			time_s++;
+
+			sprintf(fps_text, "FPS: %d", fps);
+			if (time_s < 60 && time_s >= 0) {
+				sprintf(time_text, "Time: %d", time_s);
+			} else if (time_s >= 60 && time_s < 3600) {
+				if (time_s%60 < 10) {
+					sprintf(time_text, "Time: %d:0%d", time_s/60, time_s%60);
+				} else {
+					sprintf(time_text, "Time: %d:%d", time_s/60, time_s%60);
+				}
+			}
+
+			fps = 0;
+			fps_update_time = frame_time;
+
+			fps_text_texture = create_text_texture(fps_text, core()->font, colors()->white);
+			time_text_texture = create_text_texture(time_text, core()->font, colors()->white);
+		}
+
+		render_static_text(fps_text_texture, 10, 10, ANCHOR_TYPE_TOP_LEFT);
+		render_static_text(time_text_texture, WINDOW_WIDTH - 10, 10, ANCHOR_TYPE_TOP_RIGHT);
 
 		render_sprite(sprites()->floor, 0, WINDOW_HEIGHT, 1, ANCHOR_TYPE_BOTTOM_LEFT);
 
-		render_sprite(sprites()->player, 100+i, WINDOW_HEIGHT/2, 1, ANCHOR_TYPE_CENTER);
+		render_sprite(sprites()->player, (int) player_x, WINDOW_HEIGHT/2, 1, ANCHOR_TYPE_CENTER);
 
 		SDL_RenderPresent(core()->renderer);
 
-		i++;
-		SDL_Delay(10);
+		fps++;
 	}
 
 	free((void *) colors());
+	SDL_DestroyTexture(fps_text_texture.texture);
+	SDL_DestroyTexture(time_text_texture.texture);
 
 	free_core();
 	free_sprites();
