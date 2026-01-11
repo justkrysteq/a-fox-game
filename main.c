@@ -1,33 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-
-#define GAME_TITLE "Beat 'Em Up!"
-
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
-
-#define FONT_SIZE 32
-
-#define ANCHOR_TYPE_CENTER 0
-#define ANCHOR_TYPE_TOP_LEFT 1
-#define ANCHOR_TYPE_BOTTOM_LEFT 2
-#define ANCHOR_TYPE_TOP_RIGHT 3
-
-#define IMAGE_SOURCE_WIDTH 0
-#define IMAGE_SOURCE_HEIGHT 0
-
-#define KEY_QUIT SDLK_ESCAPE
-#define KEY_MOVE_UP SDLK_w
-#define KEY_MOVE_DOWN SDLK_s
-#define KEY_MOVE_LEFT SDLK_a
-#define KEY_MOVE_RIGHT SDLK_d
-#define KEY_LIGHT_ATTACK SDLK_e
-#define KEY_HEAVY_ATTACK SDLK_r
-#define KEY_NEW_GAME SDLK_n
+#include "headers/main.h"
 
 typedef struct {
 	SDL_Window *window;
@@ -55,8 +26,6 @@ typedef struct {
 	Texture2D floor;
 } Sprites;
 
-void check_sdl_failure(const int condition, const char *message);
-
 void init_sdl(void) {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -67,10 +36,9 @@ void init_sdl(void) {
 	check_sdl_failure(TTF_Init() != 0, "TTF could not initialize");
 }
 
-void check_sdl_failure(const int condition, const char *message) {
-	if (condition) {
-		SDL_Quit();
-		printf("%s! SDL_Error: %s\n", message, SDL_GetError());
+void check_malloc_failure(const void *pointer) {
+	if (!pointer) {
+		printf("malloc failed!\n");
 
 		exit(EXIT_FAILURE);
 	}
@@ -82,6 +50,7 @@ void handle_sdl_events(SDL_Event *event, State *state) {
 			state->running = false;
 		} else if (event->type == SDL_KEYDOWN) {
 			switch (event->key.keysym.sym) {
+				case SDLK_q:
 				case KEY_QUIT:
 					state->running = false;
 					break;
@@ -99,14 +68,6 @@ void handle_sdl_events(SDL_Event *event, State *state) {
 					break;
 			}
 		}
-	}
-}
-
-void check_malloc_failure(const void *pointer) {
-	if (!pointer) {
-		printf("malloc failed!\n");
-
-		exit(EXIT_FAILURE);
 	}
 }
 
