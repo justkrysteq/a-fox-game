@@ -15,6 +15,7 @@ int get_x_offset(const int anchor_type, const int w, const int x, const float sc
 		case ANCHOR_TYPE_TOP_LEFT:
 		case ANCHOR_TYPE_BOTTOM_LEFT:
 			return x;
+		case ANCHOR_TYPE_TOP_CENTER:
 		case ANCHOR_TYPE_CENTER:
 			return x - w*scale / 2;
 		case ANCHOR_TYPE_TOP_RIGHT:
@@ -26,6 +27,7 @@ int get_y_offset(const int anchor_type, const int h, const int y, const float sc
 	switch (anchor_type) {
 		default:
 		case ANCHOR_TYPE_TOP_RIGHT:
+		case ANCHOR_TYPE_TOP_CENTER:
 		case ANCHOR_TYPE_TOP_LEFT:
 			return y;
 		case ANCHOR_TYPE_CENTER:
