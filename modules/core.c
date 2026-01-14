@@ -133,8 +133,14 @@ const Sprites *sprites(void) {
 	if (!sprites) {
 		sprites = (Sprites *) malloc(sizeof(Sprites));
 
-		sprites->player = create_sprite("sprite.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 0.25);
-		sprites->floor = create_sprite("floor.bmp", WINDOW_WIDTH, (int) (0.6*WINDOW_HEIGHT), 1);
+		sprites->floor = create_sprite("floor.bmp", WINDOW_WIDTH, (int) FLOOR_HEIGHT, 1);
+		sprites->background = create_sprite("background.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_HEIGHT, 1);
+
+		sprites->fox_u = create_sprite("fox_u.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_d = create_sprite("fox_d.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_l = create_sprite("fox_l.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_r = create_sprite("fox_r.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_idle = create_sprite("fox_idle.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
 	}
 
 	return sprites;
@@ -142,10 +148,15 @@ const Sprites *sprites(void) {
 
 void free_sprites(void) {
 	if (sprites()) {
-		SDL_DestroyTexture(sprites()->player.texture);
-		// SDL_DestroyTexture(sprites()->enemy.texture);
-		// SDL_DestroyTexture(sprites()->background.texture);
+		SDL_DestroyTexture(sprites()->background.texture);
 		SDL_DestroyTexture(sprites()->floor.texture);
+		// SDL_DestroyTexture(sprites()->enemy.texture);
+
+		SDL_DestroyTexture(sprites()->fox_u.texture);
+		SDL_DestroyTexture(sprites()->fox_d.texture);
+		SDL_DestroyTexture(sprites()->fox_l.texture);
+		SDL_DestroyTexture(sprites()->fox_r.texture);
+		SDL_DestroyTexture(sprites()->fox_idle.texture);
 
 		free((void *) sprites());
 	}

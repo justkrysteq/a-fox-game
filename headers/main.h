@@ -6,6 +6,8 @@
 
 typedef struct {
 	bool running;
+	int time_s;
+	int offset_x;
 } State;
 
 typedef struct {

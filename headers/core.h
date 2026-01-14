@@ -16,10 +16,15 @@ typedef struct {
 } Texture2D;
 
 typedef struct {
-	Texture2D player;
-	Texture2D enemy;
 	Texture2D background;
 	Texture2D floor;
+	Texture2D enemy;
+
+	Texture2D fox_u;
+	Texture2D fox_d;
+	Texture2D fox_l;
+	Texture2D fox_r;
+	Texture2D fox_idle;
 } Sprites;
 
 const Core *core(void);

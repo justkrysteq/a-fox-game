@@ -14,7 +14,8 @@ const Colors *colors(void) { // NOTE: Might be better to use global consts
 
 State init_state(void) {
 	State state = {
-		.running = true
+		.running = true,
+		.time_s = 0
 	};
 
 	return state;
@@ -108,6 +109,34 @@ double calculate_delta_time(Uint64 frame_time, Uint64 *prev_frame_time) {
 	return delta_time;
 }
 
+void handle_player_movement_bounds(Player *player) {
+	if (player->x < 0) {
+		player->x = 0;
+	} else if (player->x > WINDOW_WIDTH*FLOOR_TILE_COUNT - sprites()->fox_idle.w) {
+		player->x = WINDOW_WIDTH*FLOOR_TILE_COUNT - sprites()->fox_idle.w;
+	}
+	if (player->y > WINDOW_HEIGHT) {
+		player->y = WINDOW_HEIGHT;
+	} else if (player->y < WINDOW_HEIGHT - FLOOR_HEIGHT + sprites()->fox_idle.h/2) {
+		player->y = WINDOW_HEIGHT - FLOOR_HEIGHT + sprites()->fox_idle.h/2;
+	}
+}
+
+void offset_camera(const Player player, int *offset_x) {
+	if (player.x + *offset_x+sprites()->fox_idle.w > WINDOW_WIDTH*0.75 && player.direction.x == RIGHT_DIRECTION) {
+		*offset_x = -1 * (player.x - WINDOW_WIDTH*0.75+sprites()->fox_idle.w);
+
+	} else if (player.x + *offset_x < WINDOW_WIDTH*0.25 && player.direction.x == LEFT_DIRECTION) {
+		*offset_x = -1 * (player.x - WINDOW_WIDTH*0.25);
+	}
+
+	if (*offset_x > 0) {
+		*offset_x = 0;
+	} else if (*offset_x < -1 * WINDOW_WIDTH*(FLOOR_TILE_COUNT-1)) {
+		*offset_x = -1 * WINDOW_WIDTH*(FLOOR_TILE_COUNT-1);
+	}
+}
+
 int main(void) {
 	init_sdl();
 
@@ -119,7 +148,7 @@ int main(void) {
 
 	Uint64 prev_frame_time = SDL_GetTicks64();
 
-	int fps = 0, time_s = 0;
+	int fps = 0;
 	char fps_text[16], time_text[16];
 	strcpy(fps_text, "FPS: ?");
 	strcpy(time_text, "Time: 0");
@@ -130,8 +159,8 @@ int main(void) {
 
 
 	Player player = {
-		.x = WINDOW_WIDTH/2,
-		.y = WINDOW_HEIGHT/2,
+		.x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2,
+		.y = WINDOW_HEIGHT*0.75,
 		.direction.x = 0,
 		.direction.y = 0
 	};
@@ -145,7 +174,7 @@ int main(void) {
 
 		if (frame_time - fps_update_time >= 1000) {
 			update_fps(&fps, fps_text, &fps_text_texture);
-			update_time(&time_s, time_text, &time_text_texture);
+			update_time(&state.time_s, time_text, &time_text_texture);
 			
 			fps_update_time = frame_time;
 		}
@@ -154,11 +183,30 @@ int main(void) {
 		player.x += player.direction.x * PLAYER_SPEED * delta_time;
 		player.y += player.direction.y * PLAYER_SPEED * delta_time;
 
+		handle_player_movement_bounds(&player);
+
+		offset_camera(player, &state.offset_x);
+
+		render_texture(sprites()->background, 0, 0, ANCHOR_TYPE_TOP_LEFT, 1);
+
 		render_texture(fps_text_texture, 10, 10, ANCHOR_TYPE_TOP_LEFT, 1);
 		render_texture(time_text_texture, WINDOW_WIDTH - 10, 10, ANCHOR_TYPE_TOP_RIGHT, 1);
 
-		render_texture(sprites()->floor, 0, WINDOW_HEIGHT, ANCHOR_TYPE_BOTTOM_LEFT, 1);
-		render_texture(sprites()->player, player.x, player.y, ANCHOR_TYPE_CENTER, 1);
+		for (int i = 0; i < FLOOR_TILE_COUNT; i++) {
+			render_texture(sprites()->floor, i*sprites()->floor.w+state.offset_x, WINDOW_HEIGHT, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		}
+
+		if (player.direction.y == UP_DIRECTION && player.direction.x == 0) {
+			render_texture(sprites()->fox_u, player.x+state.offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		} else if (player.direction.y == DOWN_DIRECTION && player.direction.x == 0) {
+			render_texture(sprites()->fox_d, player.x+state.offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		} else if (player.direction.x == LEFT_DIRECTION) {
+			render_texture(sprites()->fox_l, player.x+state.offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		} else if (player.direction.x == RIGHT_DIRECTION) {
+			render_texture(sprites()->fox_r, player.x+state.offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		} else {
+			render_texture(sprites()->fox_idle, player.x+state.offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+		}
 
 		SDL_RenderPresent(core()->renderer);
 
