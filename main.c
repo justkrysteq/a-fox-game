@@ -48,6 +48,15 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 					player->direction.x = RIGHT_DIRECTION;
 
 					break;
+				case KEY_NEW_GAME:
+					state->time_s = 0;
+					player->x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2;
+					player->y = WINDOW_HEIGHT*0.75;
+					player->direction.x = 0;
+					player->direction.y = 0;
+					state->offset_x = 0;
+
+					break;
 				case KEY_LIGHT_ATTACK:
 					break;
 				case KEY_HEAVY_ATTACK:
