@@ -1,4 +1,4 @@
-#include "../headers/utils.h"
+#include "utils.h"
 
 void check_sdl_failure(const int condition, const char *message) {
 	if (condition) {

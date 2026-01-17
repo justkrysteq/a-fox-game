@@ -1,4 +1,4 @@
-#include "headers/main.h"
+#include "main.h"
 
 const SDL_Color WHITE = {255, 255, 255, 255};
 

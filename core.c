@@ -1,4 +1,4 @@
-#include "../headers/core.h"
+#include "core.h"
 
 const Core *core(void) {
 	static Core *core = NULL;
@@ -16,7 +16,7 @@ const Core *core(void) {
 		core->renderer = SDL_CreateRenderer(core->window, -1, SDL_RENDERER_ACCELERATED);
 		check_sdl_failure(!core->renderer, "Renderer could not be created");
 
-		core->font = TTF_OpenFont("assets/KiwiSoda.ttf", FONT_SIZE);
+		core->font = TTF_OpenFont("KiwiSoda.ttf", FONT_SIZE);
 		check_sdl_failure(!core->font, "Font could not be opened");
 	}
 
@@ -93,12 +93,7 @@ void render_dynamic_text(const char *text, const SDL_Color color, const int anch
 	SDL_DestroyTexture(text_texture);
 }
 
-Texture2D create_sprite(const char *sprite_assets_path, int w, int h, const float scale) {
-	char *sprite_path = (char *) malloc(sizeof(char) * (strlen(sprite_assets_path) + 1 + strlen("assets/")));
-
-	strcpy(sprite_path, "assets/");
-	strcat(sprite_path, sprite_assets_path);
-
+Texture2D create_sprite(const char *sprite_path, int w, int h, const float scale) {
 	SDL_Surface *sprite_surface = SDL_LoadBMP(sprite_path);
 	check_sdl_failure(!sprite_surface, "Sprite could not be loaded");
 
@@ -113,8 +108,6 @@ Texture2D create_sprite(const char *sprite_assets_path, int w, int h, const floa
 	SDL_Texture *sprite_texture = SDL_CreateTextureFromSurface(core()->renderer, sprite_surface);
 
 	SDL_FreeSurface(sprite_surface);
-
-	free(sprite_path);
 
 	Texture2D sprite = {
 		.texture = sprite_texture,

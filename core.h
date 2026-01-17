@@ -40,7 +40,7 @@ Texture2D create_text_texture(const char *text, TTF_Font *font, const SDL_Color 
 
 void render_dynamic_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y);
 
-Texture2D create_sprite(const char *sprite_assets_path, int w, int h, const float scale);
+Texture2D create_sprite(const char *sprite_path, int w, int h, const float scale);
 
 const Sprites *sprites(void);
 
