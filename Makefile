@@ -1,6 +1,5 @@
 COMPILER = gcc
 
-# g++ -O2 -o main main.cpp -lm -lSDL2 -lpthread -ldl -lrt
 # CFLAGS = -c `sdl2-config --cflags --libs` -Wall -Wextra -Wpedantic -Wstrict-overflow=5 -Wimplicit-fallthrough=3 -Warray-bounds=2 -Wstringop-overflow=4 -Wformat=2 -fPIE -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -fno-strict-overflow -fno-strict-aliasing -fno-omit-frame-pointer -Wstrict-prototypes -Wold-style-definition -g -O0
 # CFLAGS = -c `sdl2-config --cflags --libs` -O2
 CFLAGS = -c `sdl2-config --cflags --libs` -Wall -Wextra -Wpedantic -Werror -Wstrict-overflow=5 -Wimplicit-fallthrough=3 -Warray-bounds=2 -Wstringop-overflow=4 -Wformat=2 -Wformat-security -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -fno-strict-overflow -fno-strict-aliasing -fno-omit-frame-pointer -Wstrict-prototypes -Wold-style-definition

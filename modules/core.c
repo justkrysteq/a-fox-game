@@ -24,22 +24,20 @@ const Core *core(void) {
 }
 
 void free_core(void) {
-	if (core()) {
-		if (core()->font) {
-			TTF_CloseFont(core()->font);
-		}
-
-		if (core()->renderer) {
-			SDL_DestroyRenderer(core()->renderer);
-		}
-
-		if (core()->window) {
-			SDL_DestroyWindow(core()->window);
-		}
-
-		free((void *) core());
-		TTF_Quit();
+	if (core()->font) {
+		TTF_CloseFont(core()->font);
 	}
+
+	if (core()->renderer) {
+		SDL_DestroyRenderer(core()->renderer);
+	}
+
+	if (core()->window) {
+		SDL_DestroyWindow(core()->window);
+	}
+
+	free((void *) core());
+	TTF_Quit();
 }
 
 void init_sdl(void) {
@@ -152,7 +150,6 @@ void free_sprites(void) {
 	if (sprites()) {
 		SDL_DestroyTexture(sprites()->background.texture);
 		SDL_DestroyTexture(sprites()->floor.texture);
-		// SDL_DestroyTexture(sprites()->enemy.texture);
 
 		SDL_DestroyTexture(sprites()->fox_u.texture);
 		SDL_DestroyTexture(sprites()->fox_d.texture);

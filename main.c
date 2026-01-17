@@ -2,7 +2,73 @@
 
 const SDL_Color WHITE = {255, 255, 255, 255};
 
-void trigger_attack(Player *player, Action *attack);
+int main(void) {
+	init_sdl();
+
+	State state = init_state();
+
+	SDL_Event event;
+
+	Uint64 prev_frame_time = SDL_GetTicks64();
+
+	int fps = 0;
+	char fps_text[16], time_text[16];
+	strcpy(fps_text, "FPS: ?");
+	strcpy(time_text, "Time: 0");
+	Uint64 fps_update_time = SDL_GetTicks64();
+
+	Texture2D fps_text_texture = create_text_texture(fps_text, core()->font, WHITE);
+	Texture2D time_text_texture = create_text_texture(time_text, core()->font, WHITE);
+	Texture2D implemented_text_texture = create_text_texture(IMPLEMENTED_TEXT, core()->font, WHITE);
+
+	Player player = init_player();
+
+	while (state.running) {
+		SDL_RenderClear(core()->renderer);
+
+		Uint64 frame_time = SDL_GetTicks64();
+		double delta_time = calculate_delta_time(frame_time, &prev_frame_time);
+
+		if (frame_time - fps_update_time >= 1000) {
+			update_fps(&fps, fps_text, &fps_text_texture);
+			update_time(&state.time_s, time_text, &time_text_texture);
+
+			fps_update_time = frame_time;
+		}
+
+		handle_sdl_events(&event, &state, &player);
+		player.x += player.direction.x * PLAYER_SPEED * delta_time;
+		player.y += player.direction.y * PLAYER_SPEED * delta_time;
+
+		handle_player_movement_bounds(&player);
+		calculate_camera_offset(player, &state.offset_x);
+		handle_player_attack(&player, frame_time);
+
+		render_texture(sprites()->background, 0, INFO_BOX_HEIGHT, ANCHOR_TYPE_TOP_LEFT, 1);
+		render_floor(state.offset_x);
+
+		render_texture(fps_text_texture, INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_LEFT, 1);
+		render_texture(time_text_texture, WINDOW_WIDTH - INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_RIGHT, 1);
+		render_texture(implemented_text_texture, WINDOW_WIDTH/2 - INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_CENTER, 1);
+
+		render_player(player, state.offset_x);
+
+		SDL_RenderPresent(core()->renderer);
+
+		fps++;
+	}
+
+	SDL_DestroyTexture(fps_text_texture.texture);
+	SDL_DestroyTexture(time_text_texture.texture);
+	SDL_DestroyTexture(implemented_text_texture.texture);
+
+	free_core();
+	free_sprites();
+
+	SDL_Quit();
+
+	return EXIT_SUCCESS;
+}
 
 State init_state(void) {
 	State state = {
@@ -19,7 +85,6 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 			state->running = false;
 		} else if (event->type == SDL_KEYDOWN) {
 			switch (event->key.keysym.sym) {
-				case SDLK_q:
 				case KEY_QUIT:
 					state->running = false;
 
@@ -41,12 +106,7 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 
 					break;
 				case KEY_NEW_GAME:
-					state->time_s = 0;
-					player->x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2;
-					player->y = WINDOW_HEIGHT*0.75;
-					player->direction.x = 0;
-					player->direction.y = 0;
-					state->offset_x = 0;
+					reset_game(state, player);
 
 					break;
 				case KEY_LIGHT_ATTACK:
@@ -73,6 +133,15 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 			}
 		}
 	}
+}
+
+void reset_game(State *state, Player *player) {
+	state->time_s = 0;
+	player->x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2;
+	player->y = WINDOW_HEIGHT*0.75;
+	player->direction.x = 0;
+	player->direction.y = 0;
+	state->offset_x = 0;
 }
 
 void trigger_attack(Player *player, Action *attack) {
@@ -193,73 +262,4 @@ void handle_player_attack(Player *player, int frame_time) {
 		player->attack_heavy.in_action = false;
 		player->attack_heavy.action_time = 0;
 	}
-}
-
-int main(void) {
-	init_sdl();
-
-	State state = init_state();
-
-	SDL_Event event;
-
-	Uint64 prev_frame_time = SDL_GetTicks64();
-
-	int fps = 0;
-	char fps_text[16], time_text[16];
-	strcpy(fps_text, "FPS: ?");
-	strcpy(time_text, "Time: 0");
-	char implemented_text[] = "Impl: 1, 2, 3, 4, A";
-	Uint64 fps_update_time = SDL_GetTicks64();
-
-	Texture2D fps_text_texture = create_text_texture(fps_text, core()->font, WHITE);
-	Texture2D time_text_texture = create_text_texture(time_text, core()->font, WHITE);
-	Texture2D implemented_text_texture = create_text_texture(implemented_text, core()->font, WHITE);
-
-	Player player = init_player();
-
-	while (state.running) {
-		SDL_RenderClear(core()->renderer);
-
-		Uint64 frame_time = SDL_GetTicks64();
-		double delta_time = calculate_delta_time(frame_time, &prev_frame_time);
-
-		if (frame_time - fps_update_time >= 1000) {
-			update_fps(&fps, fps_text, &fps_text_texture);
-			update_time(&state.time_s, time_text, &time_text_texture);
-
-			fps_update_time = frame_time;
-		}
-
-		handle_sdl_events(&event, &state, &player);
-		player.x += player.direction.x * PLAYER_SPEED * delta_time;
-		player.y += player.direction.y * PLAYER_SPEED * delta_time;
-
-		handle_player_movement_bounds(&player);
-		calculate_camera_offset(player, &state.offset_x);
-		handle_player_attack(&player, frame_time);
-
-		render_texture(sprites()->background, 0, INFO_BOX_HEIGHT, ANCHOR_TYPE_TOP_LEFT, 1);
-		render_floor(state.offset_x);
-
-		render_texture(fps_text_texture, INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_LEFT, 1);
-		render_texture(time_text_texture, WINDOW_WIDTH - INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_RIGHT, 1);
-		render_texture(implemented_text_texture, WINDOW_WIDTH/2 - INFO_BOX_PADDING, INFO_BOX_PADDING, ANCHOR_TYPE_TOP_CENTER, 1);
-
-		render_player(player, state.offset_x);
-
-		SDL_RenderPresent(core()->renderer);
-
-		fps++;
-	}
-
-	SDL_DestroyTexture(fps_text_texture.texture);
-	SDL_DestroyTexture(time_text_texture.texture);
-	SDL_DestroyTexture(implemented_text_texture.texture);
-
-	free_core();
-	free_sprites();
-
-	SDL_Quit();
-
-	return EXIT_SUCCESS;
 }

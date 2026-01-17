@@ -20,7 +20,6 @@ typedef struct {
 typedef struct {
 	Texture2D background;
 	Texture2D floor;
-	Texture2D enemy;
 
 	Texture2D fox_u;
 	Texture2D fox_d;
