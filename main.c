@@ -1,16 +1,8 @@
 #include "headers/main.h"
 
-const Colors *colors(void) { // NOTE: Might be better to use global consts
-	static Colors *colors = NULL;
+const SDL_Color WHITE = {255, 255, 255, 255};
 
-	if (!colors) {
-		colors = (Colors *) malloc(sizeof(Colors));
-
-		colors->white = (SDL_Color) {255, 255, 255, 255};
-	}
-
-	return colors;
-}
+void trigger_attack(Player *player, Action *attack);
 
 State init_state(void) {
 	State state = {
@@ -58,16 +50,16 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 
 					break;
 				case KEY_LIGHT_ATTACK:
+					trigger_attack(player, &player->attack_light);
+
 					break;
 				case KEY_HEAVY_ATTACK:
+					trigger_attack(player, &player->attack_heavy);
+
 					break;
 			}
 		} else if (event->type == SDL_KEYUP) {
 			switch (event->key.keysym.sym) {
-				case KEY_QUIT:
-					state->running = false;
-
-					break;
 				case KEY_MOVE_UP:
 				case KEY_MOVE_DOWN:
 					player->direction.y = 0;
@@ -78,12 +70,15 @@ void handle_sdl_events(SDL_Event *event, State *state, Player *player) {
 					player->direction.x = 0;
 
 					break;
-				case KEY_LIGHT_ATTACK:
-					break;
-				case KEY_HEAVY_ATTACK:
-					break;
 			}
 		}
+	}
+}
+
+void trigger_attack(Player *player, Action *attack) {
+	if (!player->attack_light.in_action && !player->attack_heavy.in_action) {
+		attack->in_action = true;
+		attack->action_time = SDL_GetTicks64();
 	}
 }
 
@@ -92,7 +87,7 @@ void update_fps(int *fps, char *fps_text, Texture2D *fps_text_texture) {
 
 	*fps = 0;
 
-	*fps_text_texture = create_text_texture(fps_text, core()->font, colors()->white);
+	*fps_text_texture = create_text_texture(fps_text, core()->font, WHITE);
 }
 
 void update_time(int *time_s, char *time_text, Texture2D *time_text_texture) {
@@ -108,7 +103,7 @@ void update_time(int *time_s, char *time_text, Texture2D *time_text_texture) {
 		}
 	}
 
-	*time_text_texture = create_text_texture(time_text, core()->font, colors()->white);
+	*time_text_texture = create_text_texture(time_text, core()->font, WHITE);
 }
 
 double calculate_delta_time(Uint64 frame_time, Uint64 *prev_frame_time) {
@@ -153,7 +148,11 @@ void render_floor(const int offset_x) {
 }
 
 void render_player(const Player player, const int offset_x) {
-	if (player.direction.y == UP_DIRECTION && player.direction.x == 0) {
+	if (player.attack_light.in_action) {
+		render_texture(sprites()->fox_a1, player.x+offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+	} else if (player.attack_heavy.in_action) {
+		render_texture(sprites()->fox_a2, player.x+offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
+	} else if (player.direction.y == UP_DIRECTION && player.direction.x == 0) {
 		render_texture(sprites()->fox_u, player.x+offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
 	} else if (player.direction.y == DOWN_DIRECTION && player.direction.x == 0) {
 		render_texture(sprites()->fox_d, player.x+offset_x, player.y, ANCHOR_TYPE_BOTTOM_LEFT, 1);
@@ -166,12 +165,40 @@ void render_player(const Player player, const int offset_x) {
 	}
 }
 
+Player init_player(void) {
+	Player player = {
+		.x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2,
+		.y = WINDOW_HEIGHT*0.75,
+
+		.direction.x = 0,
+		.direction.y = 0,
+
+		.attack_light.action_time = 0,
+		.attack_light.in_action = false,
+
+		.attack_heavy.action_time = 0,
+		.attack_heavy.in_action = false
+	};
+
+	return player;
+}
+
+void handle_player_attack(Player *player, int frame_time) {
+	if (player->attack_light.in_action && frame_time - player->attack_light.action_time >= LIGHT_ATTACK_TIME) {
+		player->attack_light.in_action = false;
+		player->attack_light.action_time = 0;
+	}
+
+	if (player->attack_heavy.in_action && frame_time - player->attack_heavy.action_time >= HEAVY_ATTACK_TIME) {
+		player->attack_heavy.in_action = false;
+		player->attack_heavy.action_time = 0;
+	}
+}
+
 int main(void) {
 	init_sdl();
 
 	State state = init_state();
-
-
 
 	SDL_Event event;
 
@@ -181,20 +208,14 @@ int main(void) {
 	char fps_text[16], time_text[16];
 	strcpy(fps_text, "FPS: ?");
 	strcpy(time_text, "Time: 0");
-	char implemented_text[] = "Impl: 1, 2, 3, 4";
+	char implemented_text[] = "Impl: 1, 2, 3, 4, A";
 	Uint64 fps_update_time = SDL_GetTicks64();
 
-	Texture2D fps_text_texture = create_text_texture(fps_text, core()->font, colors()->white);
-	Texture2D time_text_texture = create_text_texture(time_text, core()->font, colors()->white);
-	Texture2D implemented_text_texture = create_text_texture(implemented_text, core()->font, colors()->white);
+	Texture2D fps_text_texture = create_text_texture(fps_text, core()->font, WHITE);
+	Texture2D time_text_texture = create_text_texture(time_text, core()->font, WHITE);
+	Texture2D implemented_text_texture = create_text_texture(implemented_text, core()->font, WHITE);
 
-
-	Player player = {
-		.x = WINDOW_WIDTH/2 - sprites()->fox_idle.w/2,
-		.y = WINDOW_HEIGHT*0.75,
-		.direction.x = 0,
-		.direction.y = 0
-	};
+	Player player = init_player();
 
 	while (state.running) {
 		SDL_RenderClear(core()->renderer);
@@ -205,7 +226,7 @@ int main(void) {
 		if (frame_time - fps_update_time >= 1000) {
 			update_fps(&fps, fps_text, &fps_text_texture);
 			update_time(&state.time_s, time_text, &time_text_texture);
-			
+
 			fps_update_time = frame_time;
 		}
 
@@ -215,6 +236,7 @@ int main(void) {
 
 		handle_player_movement_bounds(&player);
 		calculate_camera_offset(player, &state.offset_x);
+		handle_player_attack(&player, frame_time);
 
 		render_texture(sprites()->background, 0, INFO_BOX_HEIGHT, ANCHOR_TYPE_TOP_LEFT, 1);
 		render_floor(state.offset_x);
@@ -230,7 +252,6 @@ int main(void) {
 		fps++;
 	}
 
-	free((void *) colors());
 	SDL_DestroyTexture(fps_text_texture.texture);
 	SDL_DestroyTexture(time_text_texture.texture);
 

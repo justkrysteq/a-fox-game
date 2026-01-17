@@ -11,14 +11,17 @@ typedef struct {
 } State;
 
 typedef struct {
-	SDL_Color white;
-} Colors;
-
-typedef struct {
 	int x, y;
 } Direction;
 
 typedef struct {
+	int action_time;
+	bool in_action;
+} Action;
+
+typedef struct {
 	float x, y;
 	Direction direction;
+	Action attack_light;
+	Action attack_heavy;
 } Player;

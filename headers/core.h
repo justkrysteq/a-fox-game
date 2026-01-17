@@ -1,3 +1,5 @@
+#pragma once
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
@@ -25,6 +27,8 @@ typedef struct {
 	Texture2D fox_l;
 	Texture2D fox_r;
 	Texture2D fox_idle;
+	Texture2D fox_a1;
+	Texture2D fox_a2;
 } Sprites;
 
 const Core *core(void);

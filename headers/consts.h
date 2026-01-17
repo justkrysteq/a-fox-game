@@ -1,3 +1,5 @@
+#pragma once
+
 #define GAME_TITLE "Beat 'Em Up!"
 
 #define WINDOW_WIDTH 640
@@ -24,6 +26,9 @@
 #define KEY_NEW_GAME SDLK_n
 
 #define PLAYER_SPEED 200
+
+#define LIGHT_ATTACK_TIME 400
+#define HEAVY_ATTACK_TIME 800
 
 #define UP_DIRECTION -1
 #define DOWN_DIRECTION 1

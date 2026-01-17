@@ -141,6 +141,8 @@ const Sprites *sprites(void) {
 		sprites->fox_l = create_sprite("fox_l.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
 		sprites->fox_r = create_sprite("fox_r.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
 		sprites->fox_idle = create_sprite("fox_idle.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_a1 = create_sprite("fox_a1.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
+		sprites->fox_a2 = create_sprite("fox_a2.bmp", IMAGE_SOURCE_WIDTH, IMAGE_SOURCE_WIDTH, 3);
 	}
 
 	return sprites;
