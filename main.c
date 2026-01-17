@@ -254,6 +254,7 @@ int main(void) {
 
 	SDL_DestroyTexture(fps_text_texture.texture);
 	SDL_DestroyTexture(time_text_texture.texture);
+	SDL_DestroyTexture(implemented_text_texture.texture);
 
 	free_core();
 	free_sprites();
