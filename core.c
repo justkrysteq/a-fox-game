@@ -125,6 +125,8 @@ void free_sprites(void) {
 		SDL_DestroyTexture(sprites()->fox_l.texture);
 		SDL_DestroyTexture(sprites()->fox_r.texture);
 		SDL_DestroyTexture(sprites()->fox_idle.texture);
+		SDL_DestroyTexture(sprites()->fox_a1.texture);
+		SDL_DestroyTexture(sprites()->fox_a2.texture);
 
 		free((void *) sprites());
 	}

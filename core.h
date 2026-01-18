@@ -48,12 +48,14 @@ void init_sdl(void);
 /**
 * Creates a texture from a given text string and returns it.
 *
-* Note: The texture inside needs to be freed with SDL_DestroyTexture().
+* Note: The texture inside needs to be destroyed with SDL_DestroyTexture().
 */
 Texture2D create_text_texture(const char *text, TTF_Font *font, const SDL_Color color);
 
 /**
 * Creates a texture from a given sprite path and returns it.
+* 
+* Note: The texture inside needs to be destroyed with SDL_DestroyTexture().
 */
 Texture2D create_sprite(const char *sprite_path, int w, int h, const float scale);
 
