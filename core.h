@@ -30,20 +30,44 @@ typedef struct {
 	Texture2D fox_a2;
 } Sprites;
 
+/**
+* Returns const pointer to Core struct with initialized window, renderer and font.
+*/
 const Core *core(void);
 
+/**
+* Frees Core struct and performs TTF_Quit().
+*/
 void free_core(void);
 
+/**
+* Initializes SDL and TTF.
+*/
 void init_sdl(void);
 
+/**
+* Creates a texture from a given text string and returns it.
+*
+* Note: The texture inside needs to be freed with SDL_DestroyTexture().
+*/
 Texture2D create_text_texture(const char *text, TTF_Font *font, const SDL_Color color);
 
-void render_dynamic_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y);
-
+/**
+* Creates a texture from a given sprite path and returns it.
+*/
 Texture2D create_sprite(const char *sprite_path, int w, int h, const float scale);
 
+/**
+* Returns const pointer to Sprites struct with initialized textures.
+*/
 const Sprites *sprites(void);
 
+/**
+* Frees Sprites struct and perofmrs SDL_DestroyTexture() on all of its textures.
+*/
 void free_sprites(void);
 
-void render_texture(Texture2D texture, int x, int y, const int anchor_type, const float scale);
+/**
+* Renders a texture at a given position with a given anchor type and scale.
+*/
+void render_texture(const Texture2D texture, int x, int y, const int anchor_type, const float scale);

@@ -69,30 +69,6 @@ Texture2D create_text_texture(const char *text, TTF_Font *font, const SDL_Color 
 	return text_texture2d;
 }
 
-void render_dynamic_text(const char *text, const SDL_Color color, const int anchor_type, int x, int y) {
-	SDL_Surface *text_surface = TTF_RenderText_Solid(core()->font, text, color);
-	check_sdl_failure(!text_surface, "Text could not be rendered");
-
-	TTF_SizeText(core()->font, text, &text_surface->w, &text_surface->h);
-
-	SDL_Texture *text_texture = SDL_CreateTextureFromSurface(core()->renderer, text_surface);
-
-	x = get_x_offset(anchor_type, text_surface->w, x, 1);
-	y = get_y_offset(anchor_type, text_surface->h, y, 1);
-
-	SDL_Rect text_rect = {
-		.x = x,
-		.y = y,
-		.w = text_surface->w,
-		.h = text_surface->h
-	};
-
-	SDL_RenderCopy(core()->renderer, text_texture, NULL, &text_rect);
-
-	SDL_FreeSurface(text_surface);
-	SDL_DestroyTexture(text_texture);
-}
-
 Texture2D create_sprite(const char *sprite_path, int w, int h, const float scale) {
 	SDL_Surface *sprite_surface = SDL_LoadBMP(sprite_path);
 	check_sdl_failure(!sprite_surface, "Sprite could not be loaded");
@@ -154,7 +130,7 @@ void free_sprites(void) {
 	}
 }
 
-void render_texture(Texture2D texture, int x, int y, const int anchor_type, const float scale) {
+void render_texture(const Texture2D texture, int x, int y, const int anchor_type, const float scale) {
 	x = get_x_offset(anchor_type, texture.w, x, scale);
 	y = get_y_offset(anchor_type, texture.h, y, scale);
 

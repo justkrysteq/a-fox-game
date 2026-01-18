@@ -73,7 +73,8 @@ int main(void) {
 State init_state(void) {
 	State state = {
 		.running = true,
-		.time_s = 0
+		.time_s = 0,
+		.offset_x = 0
 	};
 
 	return state;
