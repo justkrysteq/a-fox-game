@@ -1,5 +1,5 @@
 {
-	description = "Beat 'Em Up";
+	description = "A Fox Game";
 
 	inputs = {
 		nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -22,19 +22,19 @@
 
 		run = pkgs.writeShellScriptBin "run" ''
 			#!${pkgs.bash}/bin/bash
-			./beat-em-up
+			./a-fox-game
 		'';
 		
 		a = pkgs.writeShellScriptBin "a" ''
 			#!${pkgs.bash}/bin/bash
-			if [ -f ./beat-em-up ]; then
+			if [ -f ./a-fox-game ]; then
 				make clean;
 				make;
 			else
 				make;
 			fi
 
-			./beat-em-up
+			./a-fox-game
 		'';
 	in
 	{

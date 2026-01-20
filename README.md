@@ -1,6 +1,8 @@
-# Beat 'Em Up
+# A Fox Game
 
-A simple fighting game written in C using SDL2.
+A simple game written in C using SDL2 where your fox can walk.
+
+![screenshot](./assets/screenshot.png)
 
 ## Credits
 

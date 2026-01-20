@@ -8,9 +8,9 @@ LDFLAGS = -lSDL2 -lSDL2_ttf
 SRCS = main.c $(wildcard modules/*.c)
 OBJS = $(SRCS:.c=.o)
 
-all: beat-em-up
+all: a-fox-game
 
-beat-em-up: ${OBJS}
+a-fox-game: ${OBJS}
 	${COMPILER} -o $@ $^ ${LDFLAGS}
 	rm -f ${OBJS}
 
@@ -18,4 +18,4 @@ main.o: main.c
 	${COMPILER} ${CFLAGS} main.c
 
 clean:
-	rm -f $(OBJS) beat-em-up
+	rm -f $(OBJS) a-fox-game

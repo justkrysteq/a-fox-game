@@ -1,6 +1,6 @@
 #pragma once
 
-#define GAME_TITLE "Beat 'Em Up!"
+#define GAME_TITLE "A Fox Game"
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
